@@ -1,18 +1,23 @@
 ---
-title: "Preparation"
-author: "Yanran"
-date: "2020/12/2"
+title: "BST260 Final Project RMarkdown"
+author: "Yanran, Yunan"
+date: "2020/12/3"
 output: html_document
 ---
 
-```{r}
+### Customer Revenue Data Exploration
+
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(lubridate)
+library(ggplot2)
+library(zoo)
 library(h2o)
 library(caret)
 library(lme4)
 library(ggalluvial)
 library(xgboost)
 library(jsonlite)
-library(lubridate)
 library(knitr)
 library(Rmisc)
 library(scales)
@@ -21,90 +26,26 @@ library(highcharter)
 library(glmnet)
 library(keras)
 library(forecast)
-library(zoo)
 library(magrittr)
-library(tidyverse)
-library(ggplot2)
-
-
 ```
 
-
-
-
-## Load data
-```{r load, message=FALSE, warning=FALSE, results='hide'}
-set.seed(0)
-
+### Load data
+```{r, message=FALSE}
+# Read the Customer Revenue data for further analysis
 tr <- read_csv("./data/train.csv")
 te <- read_csv("./data/test.csv")
 subm <- read_csv("./data/sample_submission.csv")
 ```
 
-# Peek at the dataset 
-## General info
-```{r info, result='asis', echo=FALSE}
-cat("Train set file size:", file.size("./data/train.csv"), "bytes")
-cat("Train set dimensions:", dim(tr))
-glimpse(tr)
-cat("\n")
-cat("Test set file size:", file.size("./data/test.csv"), "bytes")
-cat("Test set dimensions:", dim(te))
-glimpse(te)
-```
-
-
-## Distribution of transaction dates
-As shown in the figure, there are only a few of the transactions after Jul 2017 in the train set, 
-because the rest is in the test set. It makes sense to create time-based splits for train/validation sets.
-
-```{r dates_distr, result='asis', message=FALSE, warning=FALSE, echo=FALSE}
-p1 <- tr %>% mutate(date = ymd(date), 
-                    year_month = make_date(year(date), month(date))) %>% 
-  group_by(year_month) %>% count() %>% 
-  ggplot(aes(x = year_month, y = n)) +
-  geom_bar(stat="identity", fill="steelblue") +
-  labs(x = "", y = "transactions", title = "Train") +
-  theme_minimal() +
-  scale_x_date(labels = date_format("%Y - %m"))+
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  geom_vline(aes(xintercept = max(year_month), colour = "red"), size = 1) +
-  theme(legend.position="none")
-p2 <- te %>% mutate(date = ymd(date), 
-                    year_month = make_date(year(date), month(date))) %>% 
-  group_by(year_month) %>% count() %>% 
-  ggplot(aes(x = year_month, y = n)) +
-  geom_bar(stat="identity", fill="steelblue") +
-  labs(x = "", y = "transactions",  title = "Test") +
-  theme_minimal() +
-  scale_x_date(labels = date_format("%Y - %m"))+
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))    
-multiplot(p1, p2, cols = 2)
-```
-
-
-
-```{r counts, result='asis',  warning=FALSE, echo=FALSE}
-tr %>% select(fullVisitorId, channelGrouping, date, 
-              sessionId, socialEngagementType, visitId, 
-              visitNumber, visitStartTime) %>% 
-  map_dfr(n_distinct) %>% 
-  gather() %>% 
-  ggplot(aes(reorder(key, -value), value)) +
-  geom_bar(stat = "identity", fill="steelblue") + 
-  scale_y_log10(breaks = c(5, 50, 250, 500, 1000, 10000, 50000)) +
-  geom_text(aes(label = value), vjust = 1.6, color = "white", size=3.5) +
-  theme_minimal() +
-  labs(x = "features", y = "Number of unique values") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
-```
+### Reshaping Data
 
 ```{r}
+set.seed(0)
 head(te)
 unique(tr$socialEngagementType)
 ```
-By seeing the values in columns "device", "geoNetwork", "trafficSource", "totals", we've found that they are in JSON format. 
 
+By seeing the values in columns "device", "geoNetwork", "trafficSource", "totals", we've found that they are in JSON format. 
 
 ```{r fun0, message=FALSE, warning=FALSE, results='hide'}
 flatten_json <- . %>% 
@@ -128,19 +69,12 @@ te <- parse(te)
 ```
 
 ## Tidy datasets  {.tabset}
-### Train
-```{r, result='asis', echo=FALSE}
-kable(head(tr, 2))
-```
 
-### Test
-```{r, result='asis', echo=FALSE}
-kable(head(te, 2))
-```
-
-### Sample Submission
-```{r, result='asis', echo=FALSE}
-kable(head(subm, 5))
+### General info
+```{r}
+head(tr, 5)
+head(te, 5)
+head(subm, 5)
 ```
 
 ## Train and test features sets intersection
