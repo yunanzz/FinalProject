@@ -32,9 +32,9 @@ library(magrittr)
 ### Load data
 ```{r, message=FALSE}
 # Read the Customer Revenue data for further analysis
-tr <- read_csv("./data/train.csv")
-te <- read_csv("./data/test.csv")
-subm <- read_csv("./data/sample_submission.csv")
+tr <- read_csv("train.csv")
+te <- read_csv("test.csv")
+subm <- read_csv("sample_submission.csv")
 ```
 
 ### Reshaping Data
@@ -82,6 +82,13 @@ head(subm, 5)
 setdiff(names(tr), names(te))
 tr %<>% select(-one_of("campaignCode"))
 ```
+
+```{r}
+setdiff(names(tr), names(te))
+```
+
+
+
 The test set lacks two columns. One column is a target variable transactionRevenue. The second column (campaignCode) we remove from the train set.
 
 ## Constant columns
