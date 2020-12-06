@@ -215,13 +215,13 @@ test <- test %>%
 This dataset keeps track of the transaction revenue reported for cities and regions within a given country. We would like to only look at the overall and other sub-regions within a given country, so we create a new data frame with three columns: country name, date, and the transaction revenue in the country on that day. 
 
 ```{r}
-# library(plyr)
-# new_train <- train %>% 
-#   select(c(country, date, transactionRevenue)) %>%
-#   group_by(country, date) %>%
-#   filter(!is.na(transactionRevenue )) 
-#   ###  %>% summarize(cases = sum(transactionRevenue))
-# ## total revenue 这里有点问题还
+library(plyr)
+new_train <- train %>%
+  select(c(country, date, transactionRevenue)) %>%
+  group_by(country, date) %>%
+  filter(!is.na(transactionRevenue ))
+#  %>% summarize(cases = sum(transactionRevenue))
+## total revenue 这里有点问题还
 # 
 # countries <- "United States"
 # # new_train %>% filter(country == "United States") %>%
@@ -231,15 +231,15 @@ This dataset keeps track of the transaction revenue reported for cities and regi
 # #    ylab("Rransaction Revenue") +
 # #    ggtitle("Global Data of the Transaction Revenue")
 # 
-# new_train_US <- filter(new_train, country == "United States")
+new_train_US <- filter(new_train, country == "United States")
 
-# new_train_US %>%
-#    ggplot(aes(x = date, y = transactionRevenue, color = country)) + 
-#    geom_line(na.rm = TRUE) +
-#    xlab("Date") + 
-#    #ylab("Rransaction Revenue") +
-#    scale_y_log10("Rransaction Revenue (log10 scaled)") 
-#    ggtitle("Global Data of the Transaction Revenue")
+new_train_US %>%
+   ggplot(aes(x = date, y = transactionRevenue, color = country)) +
+   geom_line(na.rm = TRUE) +
+   xlab("Date") +
+   #ylab("Rransaction Revenue") +
+   scale_y_log10("Rransaction Revenue (log10 scaled)")
+   ggtitle("Global Data of the Transaction Revenue")
 ```
 
 Using your new data frame, make a line plot of the Transactiion revenues vs. date for the following countries: the United States.
