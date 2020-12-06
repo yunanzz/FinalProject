@@ -27,6 +27,7 @@ library(glmnet)
 library(keras)
 library(forecast)
 library(magrittr)
+library(mice)
 ```
 
 ### Load data
@@ -87,3 +88,194 @@ test_trafficSource <- paste("[", paste(test$trafficSource, collapse = ","), "]")
 head(train_device, 5)
 head(test_device, 5)
 ```
+
+```{r message=FALSE, warning=FALSE, results='hide'}
+
+# after we got the json-dealt file, we need to combine all of the columns for the four original columns
+# here we will apply cbind, i.e column bind
+# some codes idea come from this link:
+# https://medium.com/coinmonks/merging-multiple-dataframes-in-r-72629c4632a3
+
+train <- train  %>%  cbind(train_device, train_geoNetwork, train_totals, train_trafficSource )
+# also we need to get rid of the original four columns
+train <- train  %>%  select(-device,-geoNetwork, -trafficSource, -totals)
+
+
+test <- test  %>%  cbind(test_device, test_geoNetwork, test_totals, test_trafficSource )
+# also we need to get rid of the original four columns
+test <- test  %>%  select(-device,-geoNetwork, -trafficSource, -totals) 
+
+```
+
+
+```{r message=FALSE, warning=FALSE, results='hide'}
+# sanity check to see whether we get rid of all of the previous json problems
+# also here we print out the number of columns for train and test
+head(train, 5)
+head(test, 5)
+ncol(train)
+ncol(test)
+```
+
+
+As we can see from the above checking, we do see that there are some null values, and the testing dataset has two fewer columns than the train ones
+Therefore, we would like to further discover which are those different columns
+
+```{r message=FALSE, warning=FALSE, results='hide'}
+# sanity check to see whether we get rid of all of the previous json problems
+# also here we print out the number of columns for train and test
+train_col_names <- names(train)
+test_col_names <- names(test)
+# https://stackoverflow.com/questions/31573087/difference-between-two-vectors-in-r
+setdiff(train_col_names, test_col_names)
+```
+
+As we can see from above, transactionRevenue is the target variable, which is for sure missing in the testing 
+for campaignCode, for now I think it is okay for us to remove the corresponding column
+
+```{r}
+
+train <- train %>% select(-campaignCode)
+```
+
+
+```{r}
+# double check to make sure the corresponding column has been deleted successfully
+ncol(train)
+```
+
+## Now, let's deal with columns with constant values and missing values
+```{r}
+# reference: https://dplyr.tidyverse.org/reference/n_distinct.html
+# here we want to return the number of unique values for each column in the dataset
+col_unique_val <- sapply(train, n_distinct)
+col_unique_val
+
+# now, select all fo the values with only one distinct value, i.e those one with constant values
+# for these columns, we will get rid of those
+constant_col <- names(col_unique_val[col_unique_val==1])
+# now we need to delete corresponding columns from both train and test
+train <- train %>% select(-constant_col)
+test <- test %>% select(-constant_col)
+```
+
+
+## Missing values
+
+Before examine data analysis, we would like to deal with the missing values in our dataset. 
+```{r}
+sum(is.na(train))
+sum(is.na(test))
+```
+
+Though the number of missing values in our dataset looks scary, it is probably owing to our large dataset. Besides, there are some colums that we do not really interested in, so we would like to locate how these missing values distribute in our dataset.
+
+```{r nas0, result='asis', echo=TRUE}
+# miss_train <- md.pattern(train, plot = FALSE, rotate.name = TRUE)
+# m_train <- missing[order(missing[,36], decreasing = TRUE),]
+# colnames(m_train)[36] <- "sum"
+# m_train[1,]
+
+```
+
+Then, we do the same thing for the test dataset
+```{r}
+# miss_test <- md.pattern(test, plot = FALSE, rotate.name = TRUE)
+#m_test <- missing[order(missing[,36],decreasing=TRUE),]
+#colnames(m_test)[36] <- "sum"
+#m_test[1,]
+
+## Here, we print the number of missing values n each column, and it would be a reference about which variable that we would like to choose afterwards
+```
+
+## Data Wragling
+We need to convert some features to their natural representation, including date, hits(integer, provides a record of all page visits), pageviews, bounces, newVisits, transactionRevenue.
+
+```{r tf1, result='asis', message=FALSE, warning=FALSE, echo=TRUE}
+train <- train %>%
+  mutate(date = ymd(date),
+         hits = as.integer(hits),
+         pageviews = as.integer(pageviews),
+         bounces = as.integer(bounces),
+         newVisits = as.integer(newVisits),
+         transactionRevenue = as.numeric(transactionRevenue))
+         
+test <- test %>%
+  mutate(date = ymd(date),
+         hits = as.integer(hits),
+         pageviews = as.integer(pageviews),
+         bounces = as.integer(bounces),
+         newVisits = as.integer(newVisits))
+
+``` 
+
+
+## Data Visualization
+
+This dataset keeps track of the transaction revenue reported for cities and regions within a given country. We would like to only look at the overall and other sub-regions within a given country, so we create a new data frame with three columns: country name, date, and the transaction revenue in the country on that day. 
+
+```{r}
+# library(plyr)
+# new_train <- train %>% 
+#   select(c(country, date, transactionRevenue)) %>%
+#   group_by(country, date) %>%
+#   filter(!is.na(transactionRevenue )) 
+#   ###  %>% summarize(cases = sum(transactionRevenue))
+# ## total revenue 这里有点问题还
+# 
+# countries <- "United States"
+# # new_train %>% filter(country == "United States") %>%
+# #    ggplot(aes(x = date, y = transactionRevenue, color = country)) + 
+# #    geom_line(na.rm = TRUE) +
+# #    xlab("Date") + 
+# #    ylab("Rransaction Revenue") +
+# #    ggtitle("Global Data of the Transaction Revenue")
+# 
+# new_train_US <- filter(new_train, country == "United States")
+
+# new_train_US %>%
+#    ggplot(aes(x = date, y = transactionRevenue, color = country)) + 
+#    geom_line(na.rm = TRUE) +
+#    xlab("Date") + 
+#    #ylab("Rransaction Revenue") +
+#    scale_y_log10("Rransaction Revenue (log10 scaled)") 
+#    ggtitle("Global Data of the Transaction Revenue")
+```
+
+Using your new data frame, make a line plot of the Transactiion revenues vs. date for the following countries: the United States.
+
+## Target variable
+Firstly, we see **transactionRevenue** which is a sub-column of the **totals** JSON column. 
+```{r target, result='asis', echo=TRUE}
+y <- train$transactionRevenue
+# train$transactionRevenue <- NULL
+summary(y)
+```
+
+There exists 892138 NA values in **transactionRevenue**, which means only 1.27% rows have this value.
+
+
+Secondly, we see **channelGrouping**, which is the channel via which the user came to the Store. We drew a histogram about the counts of channels among all the records in the training set.
+
+```{r}
+unique(train$channelGrouping)
+
+train %>% ggplot(aes(channelGrouping)) + geom_bar() + ggtitle("The channel via which the user came to the Store") +
+xlab("Channel") +
+ylab("Count") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position="none") 
+```
+
+From the histogram above, the "Organic Search" had the most records, and then "Social", "Direct" followed.
+
+```{r}
+
+
+```
+
+
+
+
+
+
