@@ -306,7 +306,7 @@ The column "hits" is a continuous variable provides record of all page vistis fo
 
 ```{r}
 scatter.smooth(revenue_us$hits, revenue_us$transactionRevenue, col="pink",
-               main = "Relatioon between hits and revenue",
+               main = "Relation between hits and revenue",
                xlab = "Number of the page vist", ylab = "Transaction revenue")
 plot(factor(revenue_us$isMobile), revenue_us$transactionRevenue, col="purple")
 pairs(~ hits + transactionRevenue + factor(isMobile), data = revenue_us, main = " ")
@@ -356,5 +356,18 @@ lm4 = lm(transactionRevenue ~ hits + I(hits^2) + isMobile + hits*isMobile, data 
 tidy(lm4)
 ```
 
+Thought the p-values from previous models are all significant, we should notice that these linear regression model has several assumptions. Now, we would like to check whethere the main assumptions are violated.
+
+```{r}
+# Residuals versus fitted plot
+plot(fitted(lm4), residuals(lm4))
+abline(a=0, b=0, col="red")
+
+# QQ Norm plot
+qqnorm(residuals(lm4))
+qqline(residuals(lm4), col="red")
+```
+
+From the scatterplot of Residuals versus fitted values, there are few discernable outliers. The Q-Q plot also departures from straight line, which is statistical evidence of non-normality. Thus, we need to go back and check our data and consider alternative ways to improve the model.
 
 
