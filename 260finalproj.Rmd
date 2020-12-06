@@ -1,7 +1,7 @@
 ---
 title: "BST260 Final Project RMarkdown"
 author: "Yanran Li, Sean Gao, Yunan Zhao"
-date: "2020/12/3"
+date: "2020/12/7"
 output: html_document
 ---
 
@@ -27,7 +27,8 @@ library(glmnet)
 library(keras)
 library(forecast)
 library(magrittr)
-library(mice)
+library(mice) # for missing value
+library(broom) # for tidy statistical objects
 ```
 
 ### Load data
@@ -276,6 +277,84 @@ From the histogram above, the "Organic Search" had the most records, and then "S
 
 
 
+
+## Regression
+After having some general ideas about our dataset, we would like to make statistical model about customers' revune. Since our dataset is too large, we would like to have a truncated dataset to by filtering the original dataset to avoid long runtimes and computer crashing.
+
+Here, we are interested in the condition in the United States.
+
+```{r}
+revenue_us <- train %>%
+  select(c(channelGrouping, date,
+           fullVisitorId, sessionId, visitId,
+           visitNumber, visitStartTime,
+           isMobile, deviceCategory, hits, browser, source, 
+           continent, subContinent, country, region, metro, city,
+           transactionRevenue)) %>%
+  filter(country == "United States")
+
+write.csv(x = revenue_us, file = "revenue_us.csv")
+```
+
+The ourcome Y in our study is the continuous customer revenue, and we would like to do prediction about it based on cutomers' characteristics.
+
+```{r}
+str(revenue_us)
+```
+
+The column "hits" is a continuous variable provides record of all page vistis for the cusomer, and "isMobile" is a categorical variable indicates whether the customer used mobile device to access the Store. First, we want to visualze the relationship between these two explanatory variables and the outcome revenue.
+
+```{r}
+scatter.smooth(revenue_us$hits, revenue_us$transactionRevenue, col="pink",
+               main = "Relatioon between hits and revenue",
+               xlab = "Number of the page vist", ylab = "Transaction revenue")
+plot(factor(revenue_us$isMobile), revenue_us$transactionRevenue, col="purple")
+pairs(~ hits + transactionRevenue + factor(isMobile), data = revenue_us, main = " ")
+```
+
+```{r}
+# Here, we fit a simple linear model Revenue ~ Hits in accordance with the scatter plot above
+lm_hits <- lm(revenue_us$transactionRevenue ~ revenue_us$hits)
+summary(lm_hits)$coef
+```
+The coefficient of hits is statistically significant based on this regression model, which indicates that hits is associated with the output revenue.
+
+```{r}
+# Redefine isMobile variable for ggplot input and run this multiple linear model
+revenue_us$isMobile[revenue_us$isMobile == "TRUE"] = 1
+revenue_us$isMobile[revenue_us$isMobile == "FALSE"] = 0
+lm2 <- lm(transactionRevenue ~ hits + isMobile, data = revenue_us)
+summary(lm2)$coef
+
+```
+
+```{r, warning=FALSE}
+# Here, we have the plot of the revenue ~ hits + device
+p <- ggplot(data = revenue_us,
+            aes(x = hits, y = transactionRevenue, color = factor(isMobile))) +
+  geom_point() +
+  ggtitle("Transaction Revenue by hits + device") +
+  scale_color_manual(values = c("blue", 'hot pink')) +
+  theme(legend.title = element_blank()) +
+  scale_fill_manual(values = c("0", "1"), name="Access Device", breaks = c("0", "1"),
+                    labels=c("Not Mobile", "Mobile"))
+
+p
+```
+```{r}
+# To further explore the relationship between revenue and hits, we start to consider degree polynomials
+hits.2 <- I(revenue_us$hits^2)
+pairs(~ hits + transactionRevenue + hits.2, data = revenue_us, main = "Pairs")
+```
+```{r}
+# Fit multiple linear regression model include quadratic hits term
+lm3_sq = lm(transactionRevenue ~ hits + I(hits^2) + isMobile, data = revenue_us)
+tidy(lm3_sq)
+
+# Fit multiple linear regression model with interaction term
+lm4 = lm(transactionRevenue ~ hits + I(hits^2) + isMobile + hits*isMobile, data = revenue_us)
+tidy(lm4)
+```
 
 
 
