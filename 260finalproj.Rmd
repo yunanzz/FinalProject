@@ -1,12 +1,11 @@
 ---
 title: "BST260 Final Project RMarkdown"
 author: "Yanran Li, Sean Gao, Yunan Zhao"
-date: "2020/12/7"
+date: "2020/12/8"
 output: html_document
 ---
 
 ### Customer Revenue Data Exploration
-
 ```{r, message=FALSE, warning=FALSE}
 library(tidyverse)
 library(lubridate)
@@ -27,12 +26,10 @@ library(glmnet)
 library(keras)
 library(forecast)
 library(magrittr)
-# <<<<<<< HEAD
-# library(mice)
-# =======
 library(mice) # for missing value
 library(broom) # for tidy statistical objects
-# >>>>>>> 365214ad5c5db35e2738fbd6ee7e3879daaee9a5
+library(splines2) # for model smoothing
+library(gam) # for model smoothing
 ```
 
 ### Load data
@@ -50,7 +47,6 @@ submission <- read_csv("sample_submission.csv")
 ```
 
 ### Reshaping Data
-
 ```{r}
 set.seed(0)
 head(test)
@@ -58,14 +54,12 @@ unique(train$socialEngagementType)
 ```
 
 ### Reshaping Data
-
 ```{r}
 # printing out the first five rows of te and tr for further exploration
 head(train,5)
 head(test,5)
 
 ```
-
 
 As we can see from above, device, geoNetwork, trafficSource, totals are all in JSON format, hence the next step we need to is to deal with the JSON data.
 
@@ -149,7 +143,7 @@ train <- train %>% select(-campaignCode)
 ncol(train)
 ```
 
-## Now, let's deal with columns with constant values and missing values
+### Now, let's deal with columns with constant values and missing values
 ```{r}
 # reference: https://dplyr.tidyverse.org/reference/n_distinct.html
 # here we want to return the number of unique values for each column in the dataset
@@ -165,7 +159,7 @@ test <- test %>% select(-constant_col)
 ```
 
 
-## Missing values
+### Missing values
 
 Before examine data analysis, we would like to deal with the missing values in our dataset. 
 ```{r}
@@ -194,6 +188,7 @@ Then, we do the same thing for the test dataset
 ```
 
 ## Data Wragling
+
 We need to convert some features to their natural representation, including date, hits(integer, provides a record of all page visits), pageviews, bounces, newVisits, transactionRevenue.
 
 ```{r tf1, result='asis', message=FALSE, warning=FALSE, echo=TRUE}
@@ -220,11 +215,11 @@ test <- test %>%
 This dataset keeps track of the transaction revenue reported for cities and regions within a given country. We would like to only look at the overall and other sub-regions within a given country, so we create a new data frame with three columns: country name, date, and the transaction revenue in the country on that day. 
 
 ```{r}
-# library(plyr)
-# new_train <- train %>%
-#   select(c(country, date, transactionRevenue)) %>%
-#   group_by(country, date) %>%
-#   filter(!is.na(transactionRevenue ))
+library(plyr)
+new_train <- train %>%
+  select(c(country, date, transactionRevenue)) %>%
+  group_by(country, date) %>%
+  filter(!is.na(transactionRevenue ))
 #  %>% summarize(cases = sum(transactionRevenue))
 ## total revenue 这里有点问题还
 # 
@@ -236,20 +231,20 @@ This dataset keeps track of the transaction revenue reported for cities and regi
 # #    ylab("Rransaction Revenue") +
 # #    ggtitle("Global Data of the Transaction Revenue")
 # 
-# new_train_US <- filter(new_train, country == "United States")
-# 
-# new_train_US %>%
-#    ggplot(aes(x = date, y = transactionRevenue, color = country)) +
-#    geom_line(na.rm = TRUE) +
-#    xlab("Date") +
-#    #ylab("Rransaction Revenue") +
-#    scale_y_log10("Rransaction Revenue (log10 scaled)")
-#    ggtitle("Global Data of the Transaction Revenue")
+new_train_US <- filter(new_train, country == "United States")
+
+new_train_US %>%
+   ggplot(aes(x = date, y = transactionRevenue, color = country)) +
+   geom_line(na.rm = TRUE) +
+   xlab("Date") +
+   #ylab("Rransaction Revenue") +
+   scale_y_log10("Rransaction Revenue (log10 scaled)")
+   ggtitle("Global Data of the Transaction Revenue")
 ```
 
 Using your new data frame, make a line plot of the Transactiion revenues vs. date for the following countries: the United States.
 
-## Target variable
+### Target variable
 Firstly, we see **transactionRevenue** which is a sub-column of the **totals** JSON column. 
 ```{r target, result='asis', echo=TRUE}
 y <- train$transactionRevenue
@@ -280,10 +275,6 @@ From the histogram above, the "Organic Search" had the most records, and then "S
 ```
 
 
-
-
-<<<<<<< HEAD
-=======
 ## Regression
 After having some general ideas about our dataset, we would like to make statistical model about customers' revune. Since our dataset is too large, we would like to have a truncated dataset to by filtering the original dataset to avoid long runtimes and computer crashing.
 
@@ -314,7 +305,7 @@ The column "hits" is a continuous variable provides record of all page vistis fo
 scatter.smooth(revenue_us$hits, revenue_us$transactionRevenue, col="pink",
                main = "Relation between hits and revenue",
                xlab = "Number of the page vist", ylab = "Transaction revenue")
-plot(factor(revenue_us$isMobile), revenue_us$transactionRevenue, col="purple")
+plot(factor(revenue_us$isMobile), revenue_us$transactionRevenue, col="purple", lwd = 2)
 pairs(~ hits + transactionRevenue + factor(isMobile), data = revenue_us, main = " ")
 ```
 
@@ -331,7 +322,6 @@ revenue_us$isMobile[revenue_us$isMobile == "TRUE"] = 1
 revenue_us$isMobile[revenue_us$isMobile == "FALSE"] = 0
 lm2 <- lm(transactionRevenue ~ hits + isMobile, data = revenue_us)
 summary(lm2)$coef
-
 ```
 
 ```{r, warning=FALSE}
@@ -344,7 +334,6 @@ p <- ggplot(data = revenue_us,
   theme(legend.title = element_blank()) +
   scale_fill_manual(values = c("0", "1"), name="Access Device", breaks = c("0", "1"),
                     labels=c("Not Mobile", "Mobile"))
-
 p
 ```
 ```{r}
@@ -367,14 +356,59 @@ Thought the p-values from previous models are all significant, we should notice 
 ```{r}
 # Residuals versus fitted plot
 plot(fitted(lm4), residuals(lm4))
-abline(a=0, b=0, col="red")
+abline(a=0, b=0, col="red", lwd=2)
 
 # QQ Norm plot
 qqnorm(residuals(lm4))
-qqline(residuals(lm4), col="red")
+qqline(residuals(lm4), col="red", lwd=2)
 ```
 
-From the scatterplot of Residuals versus fitted values, there are few discernable outliers. The Q-Q plot also departures from straight line, which is statistical evidence of non-normality. Thus, we need to go back and check our data and consider alternative ways to improve the model.
->>>>>>> 365214ad5c5db35e2738fbd6ee7e3879daaee9a5
+From the scatterplot of Residuals versus fitted values, there are few discernable outliers. The Q-Q plot also departures from straight line, which is statistical evidence of non-normality. Since the assumptions do not hold, we need to check our data and develop more appropriate models for the given data.
+
+```{r}
+# To reduce the skewness in the residuals, we transform the output Y
+lm5_log <- lm(log(transactionRevenue) ~ hits + I(hits^2) + isMobile, data = revenue_us)
+tidy(lm5_log)
+plot(fitted(lm5_log), residuals(lm5_log))
+abline(a=0, b=0, col="3", lwd=2)
+qqnorm(residuals(lm5_log))
+qqline(residuals(lm5_log), col="3", lwd=2)
+```
+
+By apply log transformation for the transaction revenue, we achieve the linearity of effect, and normalize the residuals. Now, the regression model satisfies the assumptions better. 
+
+```{r, warning=FALSE}
+# After developing the relationship between revenue, hits, and device, we would like to consider including other forms of covariates into our regression model. Before doing that, we delve into the dataset again to see other potential estimators
+scatter.smooth(revenue_us$visitStartTime, log(revenue_us$transactionRevenue),
+               col = "brown",
+               xlab = "Number of the page vist",
+               ylab = "Transaction revenue",
+               main = "Relation between visit starttime and revenue")
+
+p2 <- ggplot(data = revenue_us,
+            aes(x = channelGrouping, y = log(transactionRevenue))) +
+              geom_boxplot() +
+  xlab("Access channel") +
+  ylab("Transaction revenue") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+p2
+```
+According to the scatterplot and the boxplot, it seems that both visitStartTime and channelGroupng do not have significant influence on the value of transaction revenue, so we will keep using "hits" and "isMobile" as the predictors.
+
+```{r}
+# fit degree = df = 3, 6, 16
+lm5.poly3 <- lm(log(transactionRevenue) ~ poly(hits, 3) + isMobile, data = revenue_us)
+lm5.bs3 <- lm(log(transactionRevenue) ~ bs(hits, df = 3) + isMobile, data = revenue_us)
+lm5.bs6 <- lm(log(transactionRevenue) ~ bs(hits, df = 6) + isMobile, data = revenue_us)
+lm5.bs16 <- lm(log(transactionRevenue) ~ bs(hits, df = 16) + isMobile, data = revenue_us)
+
+tidy(lm5.poly3)
+tidy(lm5.bs3)
+tidy(lm5.bs6)
+tidy(lm5.bs16)
+```
+
+Beforehand, we did log transformation for the output Y, and here we would like to transform our predictors. By including predictive variable "hits" in the form of polynomial function with degree = 3, the adjusted R-squared increase indicating a better prediction to some extent. In addition, we apply Spline model to smooth the overall function, and the adjusted R-squared increases as we have higher degrees of freedom in this study.
+
 
 
