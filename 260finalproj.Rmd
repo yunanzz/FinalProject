@@ -1,7 +1,7 @@
 ---
 title: "BST260 Final Project RMarkdown"
-author: "Yanran, Yunan"
-date: "2020/12/3"
+author: "Yanran Li, Sean Gao, Yunan Zhao"
+date: "2020/12/7"
 output: html_document
 ---
 
@@ -27,7 +27,12 @@ library(glmnet)
 library(keras)
 library(forecast)
 library(magrittr)
-library(mice)
+# <<<<<<< HEAD
+# library(mice)
+# =======
+library(mice) # for missing value
+library(broom) # for tidy statistical objects
+# >>>>>>> 365214ad5c5db35e2738fbd6ee7e3879daaee9a5
 ```
 
 ### Load data
@@ -215,11 +220,11 @@ test <- test %>%
 This dataset keeps track of the transaction revenue reported for cities and regions within a given country. We would like to only look at the overall and other sub-regions within a given country, so we create a new data frame with three columns: country name, date, and the transaction revenue in the country on that day. 
 
 ```{r}
-library(plyr)
-new_train <- train %>%
-  select(c(country, date, transactionRevenue)) %>%
-  group_by(country, date) %>%
-  filter(!is.na(transactionRevenue ))
+# library(plyr)
+# new_train <- train %>%
+#   select(c(country, date, transactionRevenue)) %>%
+#   group_by(country, date) %>%
+#   filter(!is.na(transactionRevenue ))
 #  %>% summarize(cases = sum(transactionRevenue))
 ## total revenue 这里有点问题还
 # 
@@ -231,15 +236,15 @@ new_train <- train %>%
 # #    ylab("Rransaction Revenue") +
 # #    ggtitle("Global Data of the Transaction Revenue")
 # 
-new_train_US <- filter(new_train, country == "United States")
-
-new_train_US %>%
-   ggplot(aes(x = date, y = transactionRevenue, color = country)) +
-   geom_line(na.rm = TRUE) +
-   xlab("Date") +
-   #ylab("Rransaction Revenue") +
-   scale_y_log10("Rransaction Revenue (log10 scaled)")
-   ggtitle("Global Data of the Transaction Revenue")
+# new_train_US <- filter(new_train, country == "United States")
+# 
+# new_train_US %>%
+#    ggplot(aes(x = date, y = transactionRevenue, color = country)) +
+#    geom_line(na.rm = TRUE) +
+#    xlab("Date") +
+#    #ylab("Rransaction Revenue") +
+#    scale_y_log10("Rransaction Revenue (log10 scaled)")
+#    ggtitle("Global Data of the Transaction Revenue")
 ```
 
 Using your new data frame, make a line plot of the Transactiion revenues vs. date for the following countries: the United States.
@@ -277,5 +282,99 @@ From the histogram above, the "Organic Search" had the most records, and then "S
 
 
 
+<<<<<<< HEAD
+=======
+## Regression
+After having some general ideas about our dataset, we would like to make statistical model about customers' revune. Since our dataset is too large, we would like to have a truncated dataset to by filtering the original dataset to avoid long runtimes and computer crashing.
+
+Here, we are interested in the condition in the United States.
+
+```{r}
+revenue_us <- train %>%
+  select(c(channelGrouping, date,
+           fullVisitorId, sessionId, visitId,
+           visitNumber, visitStartTime,
+           isMobile, deviceCategory, hits, browser, source, 
+           continent, subContinent, country, region, metro, city,
+           transactionRevenue)) %>%
+  filter(country == "United States")
+
+write.csv(x = revenue_us, file = "revenue_us.csv")
+```
+
+The ourcome Y in our study is the continuous customer revenue, and we would like to do prediction about it based on cutomers' characteristics.
+
+```{r}
+str(revenue_us)
+```
+
+The column "hits" is a continuous variable provides record of all page vistis for the cusomer, and "isMobile" is a categorical variable indicates whether the customer used mobile device to access the Store. First, we want to visualze the relationship between these two explanatory variables and the outcome revenue.
+
+```{r}
+scatter.smooth(revenue_us$hits, revenue_us$transactionRevenue, col="pink",
+               main = "Relation between hits and revenue",
+               xlab = "Number of the page vist", ylab = "Transaction revenue")
+plot(factor(revenue_us$isMobile), revenue_us$transactionRevenue, col="purple")
+pairs(~ hits + transactionRevenue + factor(isMobile), data = revenue_us, main = " ")
+```
+
+```{r}
+# Here, we fit a simple linear model Revenue ~ Hits in accordance with the scatter plot above
+lm_hits <- lm(revenue_us$transactionRevenue ~ revenue_us$hits)
+summary(lm_hits)$coef
+```
+The coefficient of hits is statistically significant based on this regression model, which indicates that hits is associated with the output revenue.
+
+```{r}
+# Redefine isMobile variable for ggplot input and run this multiple linear model
+revenue_us$isMobile[revenue_us$isMobile == "TRUE"] = 1
+revenue_us$isMobile[revenue_us$isMobile == "FALSE"] = 0
+lm2 <- lm(transactionRevenue ~ hits + isMobile, data = revenue_us)
+summary(lm2)$coef
+
+```
+
+```{r, warning=FALSE}
+# Here, we have the plot of the revenue ~ hits + device
+p <- ggplot(data = revenue_us,
+            aes(x = hits, y = transactionRevenue, color = factor(isMobile))) +
+  geom_point() +
+  ggtitle("Transaction Revenue by hits + device") +
+  scale_color_manual(values = c("blue", 'hot pink')) +
+  theme(legend.title = element_blank()) +
+  scale_fill_manual(values = c("0", "1"), name="Access Device", breaks = c("0", "1"),
+                    labels=c("Not Mobile", "Mobile"))
+
+p
+```
+```{r}
+# To further explore the relationship between revenue and hits, we start to consider degree polynomials
+hits.2 <- I(revenue_us$hits^2)
+pairs(~ hits + transactionRevenue + hits.2, data = revenue_us, main = "Pairs")
+```
+```{r}
+# Fit multiple linear regression model include quadratic hits term
+lm3_sq = lm(transactionRevenue ~ hits + I(hits^2) + isMobile, data = revenue_us)
+tidy(lm3_sq)
+
+# Fit multiple linear regression model with interaction term
+lm4 = lm(transactionRevenue ~ hits + I(hits^2) + isMobile + hits*isMobile, data = revenue_us)
+tidy(lm4)
+```
+
+Thought the p-values from previous models are all significant, we should notice that these linear regression model has several assumptions. Now, we would like to check whethere the main assumptions are violated.
+
+```{r}
+# Residuals versus fitted plot
+plot(fitted(lm4), residuals(lm4))
+abline(a=0, b=0, col="red")
+
+# QQ Norm plot
+qqnorm(residuals(lm4))
+qqline(residuals(lm4), col="red")
+```
+
+From the scatterplot of Residuals versus fitted values, there are few discernable outliers. The Q-Q plot also departures from straight line, which is statistical evidence of non-normality. Thus, we need to go back and check our data and consider alternative ways to improve the model.
+>>>>>>> 365214ad5c5db35e2738fbd6ee7e3879daaee9a5
 
 
