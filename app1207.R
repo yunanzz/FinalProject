@@ -42,8 +42,8 @@ is_na_val <- function(x) x %in% c("not available in demo dataset", "(not provide
                                   "(not set)", "<NA>", "unknown.unknown",  "(none)")
 tr2 %<>% mutate_all(funs(ifelse(is_na_val(.), NA, .)))
 
-tr2 %>% summarise_all(funs(sum(is.na(.))/n()*100)) %>% 
-  gather(key="feature", value="missing_pct")
+# tr2 %>% summarise_all(funs(sum(is.na(.))/n()*100)) %>% 
+#   gather(key="feature", value="missing_pct")
 
 
 tr2 %<>%
@@ -58,10 +58,11 @@ y2 <- tr2$transactionRevenue
 tr2$transactionRevenue <- NULL
 y2[is.na(y2)] <- 0
 
+tr3 <- tr2 %>% bind_cols(as_tibble(y2))
 
 world_map = map_data("world")
 
-map_tr2 <- tr2
+map_tr2 <- tr3
 
 country_key = data.frame(rbind(c("St. Kitts & Nevis", "Nevis"), 
                                c("Trinidad & Tobago", "Trinidad"), 
@@ -82,16 +83,17 @@ names(world_map) <- c("long", "lat", "group", "order", "country", "subregion")
 # Define UI
 ui <- fluidPage(
   
-  titlePanel("Global COVID-19 cases"),
+  titlePanel("Seeing Important Values from World Map"),
   
   fluidRow(column=12,
            
            sidebarLayout(
              sidebarPanel(
                #variable
-               # radioButtons("variable", "Select variable to display:", 
-               #              choices = c("New cases (7-day average)" = "new_cases_7dayavg",
-               #                          "New cases per million (7-day average)" = "permill_7dayavg")),
+               radioButtons("variable", "Select a Measurement",
+                            choices=c("Pageviews by country","Revenue(Log10) by country","Hits by country"),
+                            selected = "Pageviews by country"),
+               
                #country
                # selectizeInput("country", "Select up to 6 countries:", 
                #                choices = jhu_UID$Country_Region,
@@ -100,7 +102,7 @@ ui <- fluidPage(
                #date
                dateInput("date", "Select date:",
                          min = "2016-09-02",
-                         max = "2017-10-31",
+                         max = "2017-08-01",
                          value = "2016-09-02")
              ),
              
@@ -123,7 +125,10 @@ server <- function(input, output) {
     
     a1 <- setdiff(unique(mapdat1$country), unique(world_map$country))
     mapdat2=mapdat1[mapdat1$country %!in% a1,]
+    
+    date_string <- as.character(input$date)
 
+    if (input$variable=="Pageviews by country"){
     mapdat3 <- mapdat2 %>% group_by(country) %>% 
       summarise(pageviews = sum(pageviews)) %>% 
       ungroup()
@@ -133,15 +138,58 @@ server <- function(input, output) {
     
     map1 <- ggplot(mapdat4, aes(x = long, y = lat, group = group)) +
       geom_polygon(aes_string(fill = "pageviews"), color= "black") +
-      scale_fill_gradientn(n.breaks=8, colours=rev(heat.colors(10)),na.value="grey90") +
+      scale_fill_viridis_c(name = "Pageviews \n (log10 scale)", 
+                           option = "magma", trans="log10", direction = -1, 
+                           na.value="grey90") +
       theme(panel.grid.major = element_blank(),
             panel.background = element_blank(),
             axis.title = element_blank(),
             axis.text = element_blank(),
             axis.ticks = element_blank()) +
-      ggtitle("AAA") 
+      ggtitle(paste("Pageviews on", date_string))
     
-    map1
+    map1}else if (input$variable=="Revenue(Log10) by country"){
+      mapdat7 <- mapdat2  %>% 
+        group_by(country) %>% 
+        summarise(revenue = sum(value)) %>% 
+        ungroup()
+      
+      mapdat7$revenue[mapdat7$revenue == 0] <- 1
+      
+      mapdat8 <- mapdat7 %>%
+        right_join(world_map, by = "country")
+      
+      map3 <- ggplot(mapdat8, aes(x = long, y = lat, group = group)) + geom_polygon(aes_string(fill = "revenue"), color= "black") +
+        scale_fill_viridis_c(name = "Revenue \n (log10 scale)", option = "magma", trans="log10", direction = -1, na.value="grey90") +
+        theme(panel.grid.major = element_blank(),
+              panel.background = element_blank(),
+              axis.title = element_blank(),
+              axis.text = element_blank(),
+              axis.ticks = element_blank()) +
+        ggtitle(paste("Revenue(log10 scale) on", date_string)) 
+      
+      map3
+      
+    }else{
+      mapdat5 <- mapdat2 %>% group_by(country) %>% 
+        summarise(hits = sum(hits)) %>% 
+        ungroup()
+      
+      mapdat6 <- mapdat5 %>%
+        right_join(world_map, by = "country")
+      
+      map2 <- ggplot(mapdat6, aes(x = long, y = lat, group = group)) + geom_polygon(aes_string(fill = "hits"), color= "black") +
+        scale_fill_viridis_c(name = "Hits \n (log10 scale)", option = "magma", trans="log10", direction = -1, na.value="grey90") +
+        theme(panel.grid.major = element_blank(),
+              panel.background = element_blank(),
+              axis.title = element_blank(),
+              axis.text = element_blank(),
+              axis.ticks = element_blank()) +
+        ggtitle(paste("Hits on", date_string)) 
+      
+      map2
+    }
+    
   })
   
   
