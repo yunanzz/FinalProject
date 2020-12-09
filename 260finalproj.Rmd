@@ -380,3 +380,143 @@ Beforehand, we did log transformation for the output Y, and here we would like t
 
 
 
+
+
+
+
+### Now, we will start working on the machine learning part
+
+For this project specifically, our team is considering three regression based methods
+The first one being bagging methods --> i.e. random forest regressor
+The second one being boosting methods --> i.e. XGboost regressor
+
+However, based on our previous finding, there are only 1.27% data without null values in terms of transaction revenue
+
+
+#### Starting of the random forest regressor
+
+Firstly, we need to get the corresponding data without the dependent variable which would be the 
+Reference: http://corina.cc/article/28/
+```{r}
+# select corresponding independent variables and dependent variable
+# reference: https://www.jamleecute.com/random-forests-%E9%9A%A8%E6%A9%9F%E6%A3%AE%E6%9E%97/
+# first conduct train test split
+set.seed(123)
+
+#head(train,5)
+revenue<-subset(train, (!is.na(train[,"transactionRevenue"])))
+
+split <- initial_split(data=revenue, prop = 0.7)
+revenue_train <- analysis(split)
+revenue_test <- assessment(split)
+
+nrow(revenue_train)
+nrow(revenue_test)
+# head(revenue_train,5)
+
+revenue_train_rf <- revenue_train %>%
+  select(c(channelGrouping, date,
+           visitId,
+           visitNumber, visitStartTime,
+           isMobile, deviceCategory, hits, browser, source, 
+           continent, subContinent, metro, transactionRevenue))
+# head(revenue_train_rf)
+
+# note that in R, random forest is unable to handle a variable with 50+ categorical values
+temp <- sapply(revenue_train_rf, n_distinct)
+temp
+
+# head(revenue_train_rf,5)
+
+
+revenue_train_rf=revenue_train_rf %>% mutate_if(is.character, as.factor)
+
+set.seed(123)
+
+rf <- randomForest(transactionRevenue ~., data = revenue_train_rf, importance = TRUE, ntree=1000)
+# somehow, the transactionRevenue is NA in our case here, which is pretty weird
+
+# we can further plot the Mean Squared Error on the training dataset
+plot(rf)
+
+# we can also get the corresponding number of trees which lead to the smallest mse
+which.min(rf$mse)
+
+
+```
+
+
+
+From the above output, we know that the best number of tree for the random forest in our case here is 9. In the meantime, random forest tends to outperform the linear regression model a lot, for two reasons we believe:
+1) since random forest is a bagging based methods, hence through bagging, the overall accuracy/metric performance will be better than the others
+2) since the data amount is relatively small, hence the machine learning might face overfitting problem.
+
+
+### Starting of XGBoost
+```{r}
+
+# reference: https://www.datatechnotes.com/2020/08/regression-example-with-xgboost-in-r.html
+# first conduct train test split
+set.seed(123)
+
+library(xgboost)
+library(caret)
+set.seed(12)
+
+
+train_x = data.matrix(revenue_train_rf[,-14])
+train_y = revenue_train_rf[,14]
+
+
+revenue_test_rf <- revenue_test %>%
+  select(c(channelGrouping, date,
+           visitId,
+           visitNumber, visitStartTime,
+           isMobile, deviceCategory, hits, browser, source, 
+           continent, subContinent, metro, transactionRevenue))
+
+revenue_test_rf=revenue_test_rf %>% mutate_if(is.character, as.factor)
+
+
+test_x = data.matrix(revenue_test_rf[, -14])
+test_y = revenue_test_rf[, 14]
+
+xgb_train = xgb.DMatrix(data = train_x, label = train_y)
+xgb_test = xgb.DMatrix(data = test_x, label = test_y)
+
+# now we are able to apply the XGBoost onto the data itself
+xgbc = xgboost(data = xgb_train, nrounds=100)
+
+```
+
+
+
+From above data, we can see that XGBoost actually is able to outperform random forest model performance. In our opinion, there might be two reasons for this to happen:
+1) random forest tends to perform better when there is categorical variables,  however, in our case, we get rid of all of the categorical values, hence XGBoost might be able to outperform.
+2) with XGBoost being a boosting based methods, for this kinds of regression problem, it may be able to perform pretty well given that the model performance is contingent upon samll improvement step by step. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
