@@ -86,7 +86,7 @@ names(world_map) <- c("long", "lat", "group", "order", "country", "subregion")
 # Define UI
 ui <- fluidPage(
   
-  titlePanel("Seeing Important Values from World Map"),
+  titlePanel("Interactive Shinny App on Customer Revenue"),
   
   tabsetPanel(
     tabPanel("Important Values from World Map",
@@ -95,16 +95,30 @@ ui <- fluidPage(
            
            sidebarLayout(
              sidebarPanel(
+               # Add some text and a couple of hyper links before the slider for year
+               p("The map plots generated here are using data from",
+                a("Google Analytics Customer Revenue Prediction", 
+                  href="https://www.kaggle.com/c/ga-customer-revenue-prediction")),
+
+              p("Marketing teams are challenged to make investments 
+                 in promotional strategies. Thus, the world-wide distribution about several
+                variables are important to them."),
+              
+              p("You can choose 3 different measurements (Pageviews/Revenue/Hits) to see their 
+                distribution around the world on one selected day."),
+              
+               # Add some space between the text above and animated
+               # slider bar below
+               br(),
+               
+               
+               # Input: 
+               
                #variable
                radioButtons("variable", "Select a Measurement",
                             choices=c("Pageviews by country","Revenue(Log10) by country","Hits by country"),
                             selected = "Pageviews by country"),
                
-               #country
-               # selectizeInput("country", "Select up to 6 countries:", 
-               #                choices = jhu_UID$Country_Region,
-               #                multiple = TRUE,
-               #                options = list(maxItems = 6)),
                #date
                dateInput("date", "Select date:",
                          min = "2016-09-02",
@@ -119,13 +133,30 @@ ui <- fluidPage(
            )
   )),
   
-  tabPanel("Tendency Comparison",
-          br(),
+  tabPanel("Revenue v.s. Users' Visit Number",
+           sidebarLayout(
+             sidebarPanel(
+           # Add some text and a couple of hyper links before the slider for year
+           p("The 80/20 rule has proven true for many businesses – 
+             only a small percentage of customers produce most of the revenue. 
+             As such, marketing teams are challenged to make appropriate investments 
+             in promotional strategies."),
+            
+           p("Now we focus on the total transction revenue certain visit-number-users had made to 
+             see the relationship between revenue v.s. users' visit number in different countries."),
+           
+           # Add some space between the text above and animated
+           # slider bar below
+           br(),
+           
+           # Input: 
+          
           selectInput("country", 
-                      "Choose a country to compare with the United States:", 
-                      linename),
-          plotOutput(outputId = "lineplot")
-  )))
+                      "Choose a country to see its total revenue v.s. users' visiting number:", 
+                      linename)),
+          mainPanel(
+          plotOutput(outputId = "lineplot"))
+  ))))
 
 # Define server
 server <- function(input, output) {
@@ -206,7 +237,11 @@ server <- function(input, output) {
     
   })
   
+  #country_string <- input$country
+  
   output$lineplot <- renderPlot({
+    country_string <- input$country
+    
     tranc_dat1 <- tr3 %>% filter(country==input$country)
     tranc_dat2 <- tranc_dat1 %>% group_by(visitNumber) %>% 
                       summarize(revenue = sum(value)) %>% 
@@ -215,19 +250,14 @@ server <- function(input, output) {
     tranc_dat2 %>%  ggplot(aes(x = visitNumber, y = revenue)) + 
       geom_line(color="steelblue") +
       theme_minimal() +
-      #  scale_x_continuous(breaks=c(1,10, 50, 100,200))+
+      #scale_x_continuous(breaks=c(1,10, 50, 100,200), limits = c(1, 200))+
+      scale_x_continuous(limits = c(1, 100)) +
       #scale_color_discrete(name = "Country") +
       scale_y_continuous(labels = comma) +
-      ggtitle("aaa")
-    
-    
-    # dat %>%  ggplot(aes(year, life_expectancy, color = country)) + 
-    #   geom_line(na.rm = TRUE) + xlab("Year") +
-    #   ylab("Life Expectancy (Years)") +  
-    #   scale_x_continuous(breaks = c(seq(1960, 2016, by=10), 2016), limits = c(1960, 2016)) + 
-    #   scale_y_continuous(breaks = seq(10, 85, 5), limits = c(min(gapminder$life_expectancy), max(gapminder$life_expectancy))) +
-    #   scale_color_discrete(name = "Country") +
-    #   ggtitle("aaa")
+      xlab("Visit Number") +
+      ylab("Revenue") +
+      ggtitle(paste("Revenue v.s. Users' Visit Number in", country_string))
+   
   })
   
 }
