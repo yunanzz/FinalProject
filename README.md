@@ -1,6 +1,6 @@
 # Project Name: Customer Revenue Prediction
 # Team members: Sean Gao, Yanran Li, Yunan Zhao
-# Website: https://sites.google.com/d/18Yhi3pULsGkuH-tIqzOHSZXXxUJc7B4m/p/1dKtKz8UdfQr8BFjuh3MTOhediHrTAXDk/edit
+Website: https://sites.google.com/d/18Yhi3pULsGkuH-tIqzOHSZXXxUJc7B4m/p/1dKtKz8UdfQr8BFjuh3MTOhediHrTAXDk/edit
 
 This is the GitHub Repository for BST 260 Final Project. This project aims to apply data science and machine learning techniques to predict customer revenue. The dataset retrieves from Kaggle website. Motivation of the project comes from three parts:
 
