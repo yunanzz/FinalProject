@@ -86,7 +86,7 @@ names(world_map) <- c("long", "lat", "group", "order", "country", "subregion")
 # Define UI
 ui <- fluidPage(
   
-  titlePanel("Interactive Shinny App on Customer Revenue"),
+  titlePanel("Interactive Shiny App on Customer Revenue"),
   
   tabsetPanel(
     tabPanel("Important Values from World Map",
@@ -142,7 +142,7 @@ ui <- fluidPage(
              As such, marketing teams are challenged to make appropriate investments 
              in promotional strategies."),
             
-           p("Now we focus on the total transction revenue certain visit-number-users had made to 
+           p("Now we focus on the total transaction revenue certain visit-number-users had made to 
              see the relationship between revenue v.s. users' visit number in different countries."),
            
            # Add some space between the text above and animated
