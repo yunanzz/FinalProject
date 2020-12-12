@@ -8,7 +8,7 @@ This is the GitHub Repository for BST 260 Final Project. This project aims to ap
 2) Given the large dataset we have, machine learning may play an important role in prediction
 3) Eventually we are hoping to transfrom our analysis into actionable operational changes so that we would be able to have a better utilization of marketing resources.
 
-This project could be divided up into three main parts, i.e., Data Wrangling, R shiny, regression, and machine learning. 
+This project could be divided up into four main parts, i.e., Data Wrangling, R shiny, regression, and machine learning. 
 
 ## Data Wrangling
 
