@@ -13,25 +13,24 @@ library(ggplot2)
 library(zoo)
 library(h2o)
 library(caret)
-library(lme4)
-library(ggalluvial)
 library(xgboost)
 library(jsonlite)
 library(knitr)
 library(Rmisc)
 library(scales)
 library(countrycode)
-library(highcharter)
-library(glmnet)
-library(keras)
-library(forecast)
 library(magrittr)
 library(mice) # for missing value
 library(broom) # for tidy statistical objects
 library(splines2) # for model smoothing
 library(gam) # for model smoothing
 library(plyr) # for split-apply-combien-pattern in R
-library(gapminder) # to convert the transactionRevenue
+library(gapminder) # to convert the 
+library(xgboost)
+library(caret)
+library(rsample)
+library(randomForest)
+
 ```
 
 ```{r, message=FALSE}
@@ -147,7 +146,7 @@ train <- train %>% select(-constant_col)
 test <- test %>% select(-constant_col)
 ```
 
-Before examine data analysis, we would like to deal with the missing values in our dataset. 
+Before examining data analysis, we would like to deal with the missing values in our dataset. 
 ```{r}
 sum(is.na(train))
 sum(is.na(test))
@@ -202,10 +201,6 @@ tidy_train <- new_train %>%
 head(tidy_train)
 ```
 
-```{r}
-#tidy_train %>% ggplot(aes(date, hitss, color = country)) +
-#  geom_point()
-```
 
 By comparing the hits of customers between four countries, we notce that the United States has much higher page visits than all the other countries. This is probably because of the following reasons:
 1) Customer in the US has differnt shopping style from people in other countries.
@@ -236,11 +231,6 @@ ylab("Count") +
 ```
 
 From the histogram above, the "Organic Search" had the most records, and then "Social", "Direct" followed.
-
-```{r}
-
-
-```
 
 
 ## Regression
