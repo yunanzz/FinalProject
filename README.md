@@ -16,7 +16,9 @@ This is the GitHub Repository for BST 260 Final Project. This project aims to ap
 
 
 ## Data files:
-1. ``
+Our files are over the github limits. Thus we put our dataset on Google Drive:
+train.csv - https://drive.google.com/drive/folders/18Yua9kTKQ1FbPxrAUGNEs27FhYi_6S8u
+test.csv - https://drive.google.com/drive/folders/18Yua9kTKQ1FbPxrAUGNEs27FhYi_6S8u
 
 
 Our Website can be found [here] (https://sites.google.com/d/18Yhi3pULsGkuH-tIqzOHSZXXxUJc7B4m/p/1dKtKz8UdfQr8BFjuh3MTOhediHrTAXDk/edit).
@@ -30,9 +32,7 @@ This project could be divided up into four main parts, i.e., Data Wrangling, R s
 In data wrangling, main parts could be summarized as 1) transforming non-standard format data (JSON) into standard data, 2) deal with missing values.
 
 ### R Shiny
-Our Shiny App can be divided into 2 parts:
-1) Seeing 3 different measurements' (Pageviews/Revenue/Hits) distribution around the world on selected day.
-2) The relationship between revenue v.s. users' visit number in different countries.
+Our Shiny App can be divided into 2 parts: 1) Seeing 3 different measurements' (Pageviews/Revenue/Hits) distribution around the world on selected day. 2) The relationship between revenue v.s. users' visit number in different countries.
 
 
 ### Regression
