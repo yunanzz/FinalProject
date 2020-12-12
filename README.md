@@ -12,7 +12,7 @@ This project could be divided up into four main parts, i.e., Data Wrangling, R s
 
 ## Data Wrangling
 
-In data wrangling, main parts could be summarized as 1) transforming non-standard format data (JSON) into standard data, 2) deal with missing values
+In data wrangling, main parts could be summarized as 1) transforming non-standard format data (JSON) into standard data, 2) deal with missing values.
 
 ## R Shiny
 
