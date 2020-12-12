@@ -17,8 +17,8 @@ This is the GitHub Repository for BST 260 Final Project. This project aims to ap
 
 ## Data files:
 Our files are over the github limits. Thus we put our dataset on Google Drive:
-train.csv - https://drive.google.com/drive/folders/18Yua9kTKQ1FbPxrAUGNEs27FhYi_6S8u
-test.csv - https://drive.google.com/drive/folders/18Yua9kTKQ1FbPxrAUGNEs27FhYi_6S8u
+1) train.csv - https://drive.google.com/drive/folders/18Yua9kTKQ1FbPxrAUGNEs27FhYi_6S8u
+2) test.csv - https://drive.google.com/drive/folders/18Yua9kTKQ1FbPxrAUGNEs27FhYi_6S8u
 
 
 Our Website can be found [here] (https://sites.google.com/d/18Yhi3pULsGkuH-tIqzOHSZXXxUJc7B4m/p/1dKtKz8UdfQr8BFjuh3MTOhediHrTAXDk/edit).
