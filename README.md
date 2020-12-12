@@ -30,6 +30,9 @@ This project could be divided up into four main parts, i.e., Data Wrangling, R s
 In data wrangling, main parts could be summarized as 1) transforming non-standard format data (JSON) into standard data, 2) deal with missing values.
 
 ### R Shiny
+Our Shiny App can be divided into 2 parts:
+1) Seeing 3 different measurements' (Pageviews/Revenue/Hits) distribution around the world on selected day.
+2) The relationship between revenue v.s. users' visit number in different countries.
 
 
 ### Regression
