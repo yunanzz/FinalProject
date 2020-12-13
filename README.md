@@ -23,7 +23,7 @@ Our files are over the github limits. Thus we put our dataset on Google Drive:
 
 Our Website can be found [here] (https://sites.google.com/d/18Yhi3pULsGkuH-tIqzOHSZXXxUJc7B4m/p/1dKtKz8UdfQr8BFjuh3MTOhediHrTAXDk/edit).
 
-Our screencase can be found [here] .
+Our screencase can be found [here] (https://www.youtube.com/watch?v=edGueAvrOQk) .
 
 
 This project could be divided up into four main parts, i.e., Data Wrangling, R shiny, regression, and machine learning. 
