@@ -19,6 +19,7 @@ This is the GitHub Repository for BST 260 Final Project. This project aims to ap
 Our files are over the github limits. Thus we put our dataset on Google Drive:
 1) train.csv - https://drive.google.com/drive/folders/1IdbfP-L2bNtFNzDnuhXLIO_3DtynJxRG
 2) test.csv - https://drive.google.com/drive/folders/1IdbfP-L2bNtFNzDnuhXLIO_3DtynJxRG
+3) revenue_us.csv - https://drive.google.com/drive/folders/1IdbfP-L2bNtFNzDnuhXLIO_3DtynJxRG
 
 
 Our Website can be found [here]（https://sites.google.com/brandeis.edu/bst260-group16).
