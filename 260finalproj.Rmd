@@ -26,21 +26,17 @@ library(splines2) # for model smoothing
 library(gam) # for model smoothing
 library(plyr) # for split-apply-combien-pattern in R
 library(gapminder) # to convert the 
-library(xgboost)
-library(caret)
 library(rsample)
 library(randomForest)
-
 ```
 
 ```{r, message=FALSE}
+# Since our data are too big to fit in the repository, and we make the data accessible online through Google drive. Here is the link for our Google folder: https://drive.google.com/drive/folders/1IdbfP-L2bNtFNzDnuhXLIO_3DtynJxRG?usp=sharing
 # Read the Customer Revenue data for further reference:
 # training data: train
 # testing data: test
-# submission data: subm
 train <- read_csv("train.csv")
 test <- read_csv("test.csv")
-submission <- read_csv("sample_submission.csv")
 ```
 
 ## Reshaping Data
@@ -51,7 +47,7 @@ unique(train$socialEngagementType)
 ```
 
 ```{r}
-# printing out the first five rows of te and tr for further exploration
+# Print out the first five rows of te and tr for further exploration
 head(train,5)
 head(test,5)
 ```
@@ -59,8 +55,7 @@ head(test,5)
 As we can see from above, device, geoNetwork, trafficSource, totals are all in JSON format, hence the next step we need to is to deal with the JSON data.
 
 ```{r message=FALSE, warning=FALSE, results='hide'}
-
-# here since I am referring back to the link:
+# Here since I am referring back to the link:
 # https://www.kaggle.com/mrlong/r-flatten-json-columns-to-make-single-data-frame
 # https://www.kaggle.com/kailex/r-eda-for-gstore-glm-keras-xgb
 # in terms of transfroming the netted json file into single data frame
@@ -78,22 +73,20 @@ test_trafficSource <- paste("[", paste(test$trafficSource, collapse = ","), "]")
 ```
 
 ```{r message=FALSE, warning=FALSE, results='hide'}
-# sanity check upon the dealing with the json file
+# Sanity check upon the dealing with the json file
 head(train_device, 5)
 head(test_device, 5)
 ```
 
 ```{r message=FALSE, warning=FALSE, results='hide'}
-
-# after we got the json-dealt file, we need to combine all of the columns for the four original columns
-# here we will apply cbind, i.e column bind
-# some codes idea come from this link:
+# After we got the json-dealt file, we need to combine all of the columns for the four original columns
+# Here, we will apply cbind, i.e column bind
+# Some codes idea come from this link:
 # https://medium.com/coinmonks/merging-multiple-dataframes-in-r-72629c4632a3
 
 train <- train  %>%  cbind(train_device, train_geoNetwork, train_totals, train_trafficSource )
 # also we need to get rid of the original four columns
 train <- train  %>%  select(-device,-geoNetwork, -trafficSource, -totals)
-
 
 test <- test  %>%  cbind(test_device, test_geoNetwork, test_totals, test_trafficSource )
 # also we need to get rid of the original four columns
@@ -136,7 +129,7 @@ ncol(train)
 # reference: https://dplyr.tidyverse.org/reference/n_distinct.html
 # here we want to return the number of unique values for each column in the dataset
 col_unique_val <- sapply(train, n_distinct)
-col_unique_val
+tidy(col_unique_val)
 
 # now, select all fo the values with only one distinct value, i.e those one with constant values
 # for these columns, we will get rid of those
@@ -152,13 +145,13 @@ sum(is.na(train))
 sum(is.na(test))
 ```
 
-Though the number of missing values in our dataset looks scary, it is probably owing to our large dataset. Besides, there are some colums that we do not really interested in, so we would like to locate how these missing values distribute in our dataset.
+Though the number of missing values in our dataset looks scary, it is probably owing to our large dataset. Besides, there are some columns that we do not interested in, so we would like to locate how these missing values distribute in our dataset.
 ```{r nas0, result='asis', echo=TRUE}
 miss_train <- md.pattern(train, plot = FALSE, rotate.name = TRUE)
 m_train <- miss_train[order(miss_train[,36], decreasing = TRUE),]
 colnames(m_train)[36] <- "sum"
 m_train[1,]
-## Here, we print the number of missing values n each column, and it would be a reference about which variable that we would like to choose afterwards
+## Here, we print the number of missing values n each column, and it would be a reference about which variable that we would like to choose afterward
 ```
 
 ## Data Wrangling
@@ -183,8 +176,6 @@ test <- test %>%
 
 ``` 
 
-
-
 This dataset keeps track of the transaction revenue reported for cities and regions within a given country. We would like to only look at the overall and other sub-regions within a given country, so we create a new data frame with three columns: country name, date, hits, and the transaction revenue in the country on that day. For now, we first dig more into the data for the following countries: the United States, China, South Korea, and Germany.
 
 ```{r}
@@ -194,20 +185,37 @@ new_train <- train %>%
 head(new_train)
 ```
 
-```{r, message=FALSE}
-tidy_train <- new_train %>%
-  group_by(date, country) %>%
-  summarize(hitss = sum(hits))
-head(tidy_train)
+```{r}
+US_train <- new_train %>%
+  filter(country == "United States") %>%
+  group_by(country) %>%
+  summarize(US = sum(hits))
+Korea_train <- new_train %>%
+  filter(country == "South Korea") %>%
+  group_by(country) %>%
+  summarize(South_Korea = sum(hits))
+Germany_train <- new_train %>%
+  filter(country == "Germany") %>%
+  group_by(country) %>%
+  summarize(Germany = sum(hits))
+China_train <- new_train %>%
+  filter(country == "China") %>%
+  group_by(country) %>%
+  summarize(China = sum(hits))
+
+head(US_train)
+head(Korea_train)
+head(Germany_train)
+head(China_train)
 ```
 
 
-By comparing the hits of customers between four countries, we notce that the United States has much higher page visits than all the other countries. This is probably because of the following reasons:
-1) Customer in the US has differnt shopping style from people in other countries.
-2) The Google Merchndise website favored the US customers. For example, some countries might have access issue to the website to protect local business.
+By comparing the hits of customers between four countries, we notice that the United States has much higher page visits than all the other countries. This is probably because of the following reasons:
+1) Customer in the US has a different shopping style from people in other countries.
+2) The Google Merchandise website favored US customers. For example, some countries might have access issues to the website to protect local businesses.
 3) The data collection in the US is more comprehensive.
 
-#### Target variable
+### Target variable
 Firstly, we see **transactionRevenue** which is a sub-column of the **totals** JSON column. 
 ```{r target, result='asis', echo=TRUE}
 y <- train$transactionRevenue
@@ -215,8 +223,7 @@ y <- train$transactionRevenue
 summary(y)
 ```
 
-There exists 892138 NA values in **transactionRevenue**, which means only 1.27% rows have this value.
-
+There exist 892138 NA values in **transactionRevenue**, which means only 1.27% of rows have this value.
 
 Secondly, we see **channelGrouping**, which is the channel via which the user came to the Store. We drew a histogram about the counts of channels among all the records in the training set.
 
@@ -234,7 +241,7 @@ From the histogram above, the "Organic Search" had the most records, and then "S
 
 
 ## Regression
-After having some general ideas about our dataset, we would like to make statistical model about customers' revune. Since our dataset is too large, we would like to have a truncated dataset to by filtering the original dataset to avoid long runtimes and computer crashing.
+After having some general ideas about our dataset, we would like to make statistical models about customers' revenue. Since our dataset is too large, we would like to have a truncated dataset by filtering the original dataset to avoid long runtimes and computer crashing.
 
 Here, we are interested in the condition in the United States.
 
@@ -251,13 +258,13 @@ revenue_us <- train %>%
 write.csv(x = revenue_us, file = "revenue_us.csv")
 ```
 
-The ourcome Y in our study is the continuous customer revenue, and we would like to do prediction about it based on cutomers' characteristics.
+The outcome Y in our study is the continuous customer revenue, and we would like to do predictions about it based on customers' characteristics.
 
 ```{r}
 str(revenue_us)
 ```
 
-The column "hits" is a continuous variable provides record of all page vistis for the cusomer, and "isMobile" is a categorical variable indicates whether the customer used mobile device to access the Store. First, we want to visualze the relationship between these two explanatory variables and the outcome revenue.
+The column "hits" is a continuous variable that provides a record of all page visits for the customer, and "isMobile" is a categorical variable that indicates whether the customer used a mobile device to access the Store. First, we want to visualize the relationship between these two explanatory variables and the outcome revenue.
 
 ```{r}
 scatter.smooth(revenue_us$hits, revenue_us$transactionRevenue, col="pink",
@@ -299,6 +306,7 @@ p
 hits.2 <- I(revenue_us$hits^2)
 pairs(~ hits + transactionRevenue + hits.2, data = revenue_us, main = "Pairs")
 ```
+
 ```{r}
 # Fit multiple linear regression model include quadratic hits term
 lm3_sq = lm(transactionRevenue ~ hits + I(hits^2) + isMobile, data = revenue_us)
@@ -309,7 +317,7 @@ lm4 = lm(transactionRevenue ~ hits + I(hits^2) + isMobile + hits*isMobile, data 
 tidy(lm4)
 ```
 
-Thought the p-values from previous models are all significant, we should notice that these linear regression model has several assumptions. Now, we would like to check whethere the main assumptions are violated.
+Though the p-values from previous models are all significant, we should notice that these linear regression models have several assumptions. Now, we would like to check whether the main assumptions are violated.
 
 ```{r}
 # Residuals versus fitted plot
@@ -321,7 +329,7 @@ qqnorm(residuals(lm4))
 qqline(residuals(lm4), col="red", lwd=2)
 ```
 
-From the scatterplot of Residuals versus fitted values, there are few discernable outliers. The Q-Q plot also departures from straight line, which is statistical evidence of non-normality. Since the assumptions do not hold, we need to check our data and develop more appropriate models for the given data.
+From the scatterplot of Residuals versus fitted values, there are few discernable outliers. The Q-Q plot also departures from a straight line, which is statistical evidence of non-normality. Since the assumptions do not hold, we need to check our data and develop more appropriate models for the given data.
 
 ```{r}
 # To reduce the skewness in the residuals, we transform the output Y
@@ -333,7 +341,7 @@ qqnorm(residuals(lm5_log))
 qqline(residuals(lm5_log), col="3", lwd=2)
 ```
 
-By apply log transformation for the transaction revenue, we achieve the linearity of effect, and normalize the residuals. Now, the regression model satisfies the assumptions better. 
+By apply log transformation for the transaction revenue, we achieve the linearity, and normalize the residuals. Now, the regression model satisfies the assumptions better. 
 
 ```{r, warning=FALSE}
 # After developing the relationship between revenue, hits, and device, we would like to consider including other forms of covariates into our regression model. Before doing that, we delve into the dataset again to see other potential estimators
@@ -351,7 +359,8 @@ p2 <- ggplot(data = revenue_us,
   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 p2
 ```
-According to the scatterplot and the boxplot, it seems that both visitStartTime and channelGroupng do not have significant influence on the value of transaction revenue, so we will keep using "hits" and "isMobile" as the predictors.
+
+According to the scatterplot and the boxplot, it seems that both visitStartTime and channelGroupng do not have significant influences on the value of transaction revenue, so we will keep using "hits" and "isMobile" as the predictors.
 
 ```{r}
 # fit degree = df = 3, 6, 16
@@ -366,11 +375,7 @@ tidy(lm5.bs6)
 tidy(lm5.bs16)
 ```
 
-Beforehand, we did log transformation for the output Y, and here we would like to transform our predictors. By including predictive variable "hits" in the form of polynomial function with degree = 3, the adjusted R-squared increase indicating a better prediction to some extent. In addition, we apply Spline model to smooth the overall function, and the adjusted R-squared increases as we have higher degrees of freedom in this study.
-
-
-
-
+Beforehand, we did log transformation for the output Y, and here we would like to transform our predictors. By including the predictive variable "hits" in the form of a polynomial function with degree = 3, the adjusted R-squared increase indicating a better prediction to some extent. In addition, we apply the Spline model to smooth the overall function, and the adjusted R-squared increases as we have higher degrees of freedom in this study.
 
 
 
@@ -479,21 +484,9 @@ xgbc = xgboost(data = xgb_train, nrounds=100)
 
 ```
 
-
-
 From above data, we can see that XGBoost actually is able to outperform random forest model performance. In our opinion, there might be two reasons for this to happen:
 1) random forest tends to perform better when there is categorical variables,  however, in our case, we get rid of all of the categorical values, hence XGBoost might be able to outperform.
 2) with XGBoost being a boosting based methods, for this kinds of regression problem, it may be able to perform pretty well given that the model performance is contingent upon samll improvement step by step. 
-
-
-
-
-
-
-
-
-
-
 
 
 
